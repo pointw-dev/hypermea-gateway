@@ -1,0 +1,29 @@
+version: '3'
+name: hypermea-gateway
+
+services:
+  hypermea-gateway:
+    image: hypermea-gateway
+    container_name: hypermea-gateway
+    ports:
+      - "2112:80"
+    environment:
+      - HY_INSTANCE_NAME=hypermea-gateway development container
+      - HY_MONGO_HOST=hypermea-gateway-mongo
+    volumes:
+    - ./logs:/var/log/hypermea-gateway
+    depends_on:
+      - hypermea-gateway-mongo
+
+  hypermea-gateway-mongo:
+    image: mongo
+    container_name: hypermea-gateway-mongo
+    volumes:
+      - mongodb:/data/db
+      - mongodb_config:/data/configdb      
+    ports:
+      - "27017:27017"
+
+volumes:
+    mongodb:
+    mongodb_config:
