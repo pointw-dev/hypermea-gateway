@@ -33,4 +33,5 @@ DEFINITION = {
         "url": 'regex("[\w]+")',  # pylint: disable=anomalous-backslash-in-string
         "field": "name",
     },
+    "item_methods": ['GET', 'PUT', 'DELETE']
 }
