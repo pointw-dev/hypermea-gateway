@@ -3,7 +3,7 @@ import socket
 
 from . import settings
 
-VERSION = '0.1.0'
+VERSION = '0.8.0'
 
 
 # set environment variables from _env.conf (which is in .gitignore)
@@ -58,3 +58,11 @@ if SETTINGS.has_enabled('HY_SEND_ERROR_EMAILS'):
 # cancellable settings...
 # if SETTINGS.get('HY_CANCELLABLE') == '':
 #     del SETTINGS['HY_CANCELLABLE']
+
+
+SETTINGS_GATEWAY = settings.Settings.instance()
+SETTINGS_GATEWAY.set_prefix_description(
+    'GW', 'Gateway Service configuration')
+SETTINGS_GATEWAY.create('GW', {
+    "CURIES_NAMESPACE_URI":  "uri://hypermea.com"})
+

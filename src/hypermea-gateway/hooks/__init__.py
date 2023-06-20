@@ -1,13 +1,15 @@
 import logging
 import json
 import re
-from utils import echo_message
-import hooks._gateway
+from utils import echo_message, get_db
 import hooks._error_handlers
 import hooks._settings
 import hooks._logs
 from log_trace.decorators import trace
-from configuration import SETTINGS
+from configuration import SETTINGS, SETTINGS_GATEWAY
+import hooks.registrations
+import hashlib
+
 
 LOG = logging.getLogger('hooks')
 
@@ -23,13 +25,12 @@ def add_hooks(app):
         def _echo_message():
             return echo_message()
 
-    hooks._gateway.add_hooks(app)
     hooks._error_handlers.add_hooks(app)
     hooks._settings.add_hooks(app)
     hooks._logs.add_hooks(app)
+    hooks.registrations.add_hooks(app)
 
 
-@trace
 @trace
 def _tidy_post_links(resource, request, payload):
     if payload.status_code == 201:
@@ -142,3 +143,35 @@ def _add_parent_link(links, resource):
         'href': links['collection']['href'],
         'title': resource
     }
+
+
+@trace
+def _create_gateway_links(j):
+    db = get_db()
+    registration_col = db["registrations"]
+    curies = []
+    all_links = dict()
+    for record in registration_col.find():
+        for key, value in record["rels"].items():
+            if registration_col.count_documents({
+                "$and": [
+                    {f"rels.{key}": {'$exists': 1}},
+                    {'name': {"$ne": record["name"]}}
+                ]
+            }) or j["_links"].get(f"{key}") is not None:
+                all_links[record["name"] + ":" + key] = record["rels"][key]
+            else:
+                all_links[key] = record["rels"][key]
+            curie_instance = dict()
+            curie_instance["name"] = record["name"]
+            curie_instance["href"] = (
+                SETTINGS_GATEWAY.get("GW_CURIES_NAMESPACE_URI", "")
+                + f'/{record["name"]}/relations/{"{rel}"}'
+            )
+            curie_instance["templated"] = True
+            if curie_instance not in curies:
+                curies.append(curie_instance)
+    j = {"_links": all_links | j["_links"]}
+    if curies:
+        j["_links"]["curies"] = curies
+    return j
