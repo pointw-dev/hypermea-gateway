@@ -14,6 +14,11 @@ import hashlib
 LOG = logging.getLogger('hooks')
 
 
+class EtagException(Exception):
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+
 @trace
 def add_hooks(app):
     app.on_post_GET += _fix_links
@@ -52,8 +57,13 @@ def _fix_links(resource, request, payload):
     if payload.status_code in [200, 201]:
         document = json.loads(payload.data)
 
-        if resource is None and '_links' in document:
-            document['_links'] = _rewrite_schema_links(links=document.get('_links', {}))
+        if resource is None:
+            try:
+                document = _handle_schema_request(document, payload, request)
+            except EtagException as ex:
+                payload.status_code = ex.status_code
+                payload.data = b''
+                return
         else:
             if '_items' in document:
                 for item in document['_items']:
@@ -63,6 +73,23 @@ def _fix_links(resource, request, payload):
             _process_item_links(links=document.get('_links', {}))
 
         payload.data = json.dumps(document, indent=4 if 'pretty' in request.args else None)
+
+
+@trace
+def _handle_schema_request(document, payload, request):
+    document, etag = _rewrite_schema_links(document)
+    payload.headers.add_header('Etag', etag)
+    document['_etag'] = etag
+
+    if_none_match_header = request.headers.get('if-none-match', '')
+    if_match_header = request.headers.get('if-match', '')
+
+    if if_none_match_header == '*' or etag in if_none_match_header:
+        raise EtagException(304)  # Not modified
+    if if_match_header and etag not in if_match_header:
+        raise EtagException(412)  # Precondition failed
+
+    return document
 
 
 @trace
@@ -76,6 +103,36 @@ def _process_item_links(links):
         _add_missing_slashes(link)
         _insert_base_url(link)
         _remove_regex_from_href(link)
+
+
+@trace
+def _rewrite_schema_links(document):
+    # base_url =  SETTINGS.get('HY_BASE_URL') or ''
+    base_url =  SETTINGS.get('HY_BASE_URL', '')
+    
+    if '_links' in document and 'child' in document['_links'] and len(document['_links']) == 1:
+        old = document['_links']['child']
+        del document['_links']['child']
+        new_links = _create_new_schema_links(base_url, old)
+        document['_links'] = new_links
+    
+    document = _create_gateway_links(document)
+    return document, hashlib.md5(json.dumps(document['_links']).encode('utf-8')).hexdigest()
+
+@trace
+def _create_new_schema_links(base_url, old_links):
+    new_links = {
+        'self': {'href': f'{base_url}/', 'title': 'endpoints'},
+        'logging': {'href': f'{base_url}/_logging', 'title': 'logging'}
+    }
+
+    for link in old_links:
+        if '<' not in link['href'] and not link['title'] == '_schema':
+            rel = link['title'][1:] if link['title'].startswith('_') else link['title']
+            link['href'] = f'{base_url}/{link["href"]}'
+            new_links[rel] = link
+
+    return new_links
 
 
 @trace
@@ -106,32 +163,6 @@ def _remove_regex_from_href(link):
     # TODO: this is needed due to a bug in Eve - fix that bug!
     if '<regex' in link['href']:
         link['href'] = re.sub('\/\<regex.*?\>', '', link['href'])
-
-
-@trace
-def _rewrite_schema_links(links):
-    if not links or 'child' not in links or len(links) != 1:
-        return
-
-    old = links['child']
-    del links['child']
-
-    base_url = SETTINGS.get('HY_BASE_URL', '')
-
-    new_links = {
-        'self': {'href': f'{base_url}/', 'title': 'endpoints'},
-        'logging': {'href': f'{base_url}/_logging', 'title': 'logging'}
-    }
-
-    for link in old:
-        if '<' in link['href'] or link['title'] == '_schema':
-            continue
-
-        rel = link['title'][1:] if link['title'].startswith('_') else link['title']
-        link['href'] = f'{base_url}/{link["href"]}'
-        new_links[rel] = link
-
-    return new_links
 
 
 @trace

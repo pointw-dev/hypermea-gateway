@@ -3,7 +3,7 @@ import socket
 
 from . import settings
 
-VERSION = '0.8.0'
+VERSION = '0.8.1'
 
 
 # set environment variables from _env.conf (which is in .gitignore)
