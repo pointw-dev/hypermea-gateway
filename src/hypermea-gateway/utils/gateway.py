@@ -1,13 +1,14 @@
 import logging
-import requests
-from flask import current_app as app
-from log_trace.decorators import trace
-from requests.exceptions import ConnectionError
 import json
+import requests
+from requests.exceptions import ConnectionError
+from flask import current_app
+from log_trace.decorators import trace
 from configuration import SETTINGS
 
 LOG = logging.getLogger('gateway')
 REGISTRATIONS = {}
+
 
 def register(app):
     if not SETTINGS['HY_GATEWAY_URL']:
@@ -23,8 +24,8 @@ def register(app):
     LOG.info(f'Registering with gateway as {name} at {base_url} to {url}')
     api = app.test_client()
     response = api.get('/')
-    j = response.json
-    rels = j.get('_links', {})
+    document = response.json
+    rels = document.get('_links', {})
 
     if rels:
         body = {
@@ -81,14 +82,14 @@ def _handle_post_from_remote(resource, request):
         return
     field = list(where.keys())[0]
     remote_id = where[field]
-    definition = app.config['DOMAIN'][resource]['schema'][field]
+    definition = current_app.config['DOMAIN'][resource]['schema'][field]
     remote_relation = definition.get('remote_relation', {})
     if not remote_relation:
         return
 
-    j = json.loads(request.get_data())  # ASSERT: is json format, etc
-    j[field] = remote_id
-    request._cached_data = json.dumps(j).encode('utf-8')
+    document = json.loads(request.get_data())  # ASSERT: is json format, etc
+    document[field] = remote_id
+    request._cached_data = json.dumps(document).encode('utf-8')
 
 
 @trace
@@ -99,7 +100,7 @@ def _embed_remote_parent_resource(resource, request, payload):
     embeddable = json.loads(request.args[embed_key])
     for field in embeddable:
         if embeddable[field]:
-            definition = app.config['DOMAIN'][resource]['schema'][field]
+            definition = current_app.config['DOMAIN'][resource]['schema'][field]
             remote_relation = definition.get('remote_relation', {})
             rel = remote_relation.get('rel')
             if rel and remote_relation.get('embeddable', False):

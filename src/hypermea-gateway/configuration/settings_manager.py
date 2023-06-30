@@ -1,4 +1,8 @@
+import logging
 import os
+
+LOG = logging.getLogger('settings.manager')
+
 
 class Singleton:
     """
@@ -36,56 +40,56 @@ class Singleton:
         raise TypeError('Singletons must be accessed through `instance()`.')
 
 
-
 @Singleton
-class Settings():
+class SettingsManager:
     """
     A collection of grouped name/value pairs that act as setting/configuration items.
     Groups are identified by a prefix.
-    
+
     This class is a singleton and can only be used via its instance() method.
-    
+
     These name/value pairs must first be created.  They can be set in three ways:
     - through this class's methods
     - overridden by environment variables
     - overridden by the contents of an optional file named `_env.conf`
-        Each line in the _env.conf is in the format "name=value".  
+        Each line in the _env.conf is in the format "name=value".
         Blank/whitespace lines and lines staring with # are ignored.
-    
+
     Methods:
-      create                  Adds a group and a name to the collection, with an 
-                              optional default_value.  Set `is_optional` to True 
-                              and this setting will not be visible when its value 
+      create                  Adds a group and a name to the collection, with an
+                              optional default_value.  Set `is_optional` to True
+                              and this setting will not be visible when its value
                               is None
-                  
+
       set_prefix_description  Provide a textual description for a prefix which will
                               be displayed when dumping
-                              
+
       get                     Used to look up the value of a setting.  If the setting name
                               you want to look up has the prefix in it, leave `prefix` None
                               and the method will parse
-                              e.g. 
-                                  prefix == None, setting_name == HY_INSTANCE_NAME 
-                                     becomes 
-                                  prefix == ES, setting_name == INSTANCE_NAME
-                                  
+                              e.g.
+                                  prefix == None, setting_name == HY_INSTANCE_NAME
+                                     becomes
+                                  prefix == HY, setting_name == INSTANCE_NAME
+
       has_enabled             A value is considered "enabled" if it begins with Y, T, or E
                               i.e. the following means a setting (if it exists) is enabled:
                               - 'Yes' or 'yes' or 'Y' or 'y'
                               - 'True' or 'true' or 'T' or 't'
                               - 'Enabled' or 'enabled' or 'E' or 'e'
-  
+
       dump                    output all settings by group/prefix.
                               If you do not supply a callback, the method will use print()
-                              This gives you the ability to pass callback=LOG.info to 
+                              This gives you the ability to pass callback=LOG.info to
                               redirect the dump output to your logger
-                              
+
       []                      You can use square brackets to access (and change) settings
                               whose name has the begins with the prefix
                               e.g.
                                   port = settings['HY_API_PORT']
                                   settings['HY_LOGGING_LEVEL'] = 'Debug'
     """
+
     def __init__(self):
         self.settings = {}
         self.optional_settings = {}
@@ -113,7 +117,7 @@ class Settings():
             self.settings[prefix] = {}
         if is_optional and prefix not in self.optional_settings:
             self.optional_settings[prefix] = {}
-        
+
         if type(setting_name) is dict:  # is_optional is ignored
             settings = setting_name
             for setting_name in settings:
@@ -121,7 +125,7 @@ class Settings():
                     raise ValueError(f'settings[{prefix}][{setting_name.upper()}] already exists')
                 self.settings[prefix][setting_name.upper()] = settings[setting_name]
         else:
-            setting_name = setting_name.upper()            
+            setting_name = setting_name.upper()
             if setting_name in self.settings[prefix]:
                 raise ValueError(f'settings[{prefix}][{setting_name}] already exists')
             if is_optional:
@@ -154,15 +158,18 @@ class Settings():
         else:
             for prefix in self.settings:
                 self._dump_prefix(prefix, callback)
-                
+
+        if self.settings.get('HY_BASE_URL') and self.settings.get('HY_BASE_PATH'):
+            LOG.warning('HY_BASE_URL and HY_BASE_PATH cannot both be set.  Ignoring HY_BASE_PATH.')
+
     def has_enabled(self, setting_name, prefix=None):
         value = self.get(setting_name, prefix)
-        
+
         return value[0].upper() in 'YTE' if value else False
-            # i.e. the following means a setting (if it exists) is enabled:
-            # - 'Yes' or 'yes' or 'Y' or 'y'
-            # - 'True' or 'true' or 'T' or 't'
-            # - 'Enabled' or 'enabled' or 'E' or 'e'
+        # i.e. the following means a setting (if it exists) is enabled:
+        # - 'Yes' or 'yes' or 'Y' or 'y'
+        # - 'True' or 'true' or 'T' or 't'
+        # - 'Enabled' or 'enabled' or 'E' or 'e'
 
     # _PRIVATE METHODS
     def _set_from_environment(self):
@@ -183,9 +190,10 @@ class Settings():
                     try:
                         new_value = type(old_value)(new_value)
                     except ValueError:
-                        raise TypeError(f'attempt to set {prefix}_{setting_name} to a different type than its default value (should be {type(old_value)}).')
+                        raise TypeError(
+                            f'attempt to set {prefix}_{setting_name} to a different type than its default value (should be {type(old_value)}).')
                 self.settings[prefix][setting_name] = new_value
-                
+
         for prefix in self.optional_settings:
             for setting_name in self.optional_settings[prefix]:
                 old_value = self.optional_settings[prefix][setting_name]  # TODO: refactor with non-optional above
@@ -195,15 +203,17 @@ class Settings():
                         try:
                             new_value = type(old_value)(new_value)
                         except ValueError:
-                            raise TypeError(f'attempt to set {prefix}_{setting_name} to a different type than its default value (should be {type(old_value)}).')
+                            raise TypeError(
+                                f'attempt to set {prefix}_{setting_name} to a different type than its default value (should be {type(old_value)}).')
 
                     if new_value:
                         self.settings[prefix][setting_name] = new_value
 
-    def _parse_setting_name(self, setting_name):
+    @staticmethod
+    def _parse_setting_name(setting_name):
         first_underscore = setting_name.index('_')
         prefix = setting_name[:first_underscore]
-        setting_name = setting_name[first_underscore+1:]
+        setting_name = setting_name[first_underscore + 1:]
         return prefix, setting_name
 
     def _dump_prefix(self, prefix, callback):
@@ -215,44 +225,4 @@ class Settings():
                 value = '***'
             callback(f'{prefix}_{setting_name}: {value}')
 
-
-
 # TODO: handle cancellable values
-if __name__ == '__main__':
-    settings = Settings.instance()
-    settings.set_prefix_description('es', 'HypermeaService base settings')
-    settings.create('es', 'api_name', 'ishowroom-catalog-api')
-    settings.create('es', {
-        'INSTANCE_NAME': 'my service name',
-        'TRACE_LOGGING': 'Enabled',
-        'ADD_ECHO': 'False',
-        'API_PORT': 2112
-    })
-
-    auth_settings = Settings.instance()
-    auth_settings.set_prefix_description('auth', 'HypermeaService authorization settings')
-    auth_settings.create('auth', 'enable_Basic', 'Yes')
-    auth_settings.create('auth', 'root_password', 'swordfish')
-
-    settings.dump()
-    print('==========\n')
-
-    print(f"settings['HY_INSTANCE_NAME']: {settings['HY_INSTANCE_NAME']}")
-    print('...changing instance name')
-    settings['HY_INSTANCE_NAME'] = 'new name via __setitem__'
-    print(f"settings['HY_INSTANCE_NAME']: {settings['HY_INSTANCE_NAME']}")
-    
-    print('==========\n')
-    
-    print(f'HY_API_PORT in settings: {"HY_API_PORT" in settings}')
-    print(f'HY_NOT_CREATED in settings {"HY_NOT_CREATED" in settings}')
-
-    print('==========\n')
-    
-    print(f'is HY_TRACE_LOGGING enabled? {settings.has_enabled("HY_TRACE_LOGGING")}')
-    print(f'is HY_ADD_ECHO enabled? {settings.has_enabled("HY_ADD_ECHO")}')
-    print(f'IS HY_NOT_CREATED enabled {settings.has_enabled("HY_NOT_CREATED")}')
-
-    print('==========\n')
-
-    

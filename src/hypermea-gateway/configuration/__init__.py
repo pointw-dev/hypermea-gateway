@@ -1,7 +1,6 @@
-import os
 import socket
 
-from . import settings
+from .settings_manager import SettingsManager
 
 VERSION = '0.8.2'
 DEFAULT_CURIES_NAMESPACE_URI = 'uri://hypermea.com'
@@ -18,7 +17,7 @@ if os.path.exists('_env.conf'):
                     os.environ[nvp[0].strip()] = nvp[1].strip()
 
 
-SETTINGS = settings.Settings.instance()
+SETTINGS = SettingsManager.instance()
 SETTINGS.set_prefix_description('HY', 'HypermeaService base configuration')
 SETTINGS.create('HY', {
     'API_NAME': 'hypermea-gateway',
@@ -38,6 +37,8 @@ SETTINGS.create('HY', {
 })
 
 # optional settings...
+SETTINGS.create('HY', 'USE_ABSOLUTE_URLS', is_optional=True)
+SETTINGS.create('HY', 'BASE_PATH', is_optional=True)
 SETTINGS.create('HY', 'BASE_URL', is_optional=True)
 SETTINGS.create('HY', 'GATEWAY_URL', is_optional=True)
 SETTINGS.create('HY', 'NAME_ON_GATEWAY', is_optional=True)
