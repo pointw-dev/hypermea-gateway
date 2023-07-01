@@ -2,19 +2,8 @@ import socket
 
 from .settings_manager import SettingsManager
 
-VERSION = '0.8.2'
+VERSION = '0.8.6'
 DEFAULT_CURIES_NAMESPACE_URI = 'uri://hypermea.com'
-
-
-# set environment variables from _env.conf (which is in .gitignore)
-if os.path.exists('_env.conf'):
-    with open('_env.conf') as setting:
-        for line in setting:
-            if not line.startswith('#'):
-                line = line.rstrip()
-                nvp = line.split('=')
-                if len(nvp) == 2:
-                    os.environ[nvp[0].strip()] = nvp[1].strip()
 
 
 SETTINGS = SettingsManager.instance()
@@ -62,9 +51,8 @@ if SETTINGS.has_enabled('HY_SEND_ERROR_EMAILS'):
 #     del SETTINGS['HY_CANCELLABLE']
 
 
-SETTINGS_GATEWAY = settings.Settings.instance()
-SETTINGS_GATEWAY.set_prefix_description(
+SETTINGS.set_prefix_description(
     'GW', 'Gateway Service configuration')
-SETTINGS_GATEWAY.create('GW', {
+SETTINGS.create('GW', {
     "CURIES_NAMESPACE_URI":  DEFAULT_CURIES_NAMESPACE_URI})
 

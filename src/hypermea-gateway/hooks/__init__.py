@@ -6,7 +6,7 @@ import hooks._error_handlers
 import hooks._settings
 import hooks._logs
 from log_trace.decorators import trace
-from configuration import SETTINGS, SETTINGS_GATEWAY
+from configuration import SETTINGS
 import hooks.registrations
 import hashlib
 
@@ -121,7 +121,7 @@ def _rewrite_schema_links(document):
 @trace
 def _create_new_schema_links(base_url, old_links):
     new_links = {
-        'self': {'href': f'{base_url}/', 'title': 'endpoints'},
+        'self': {'href': f'{base_url}/', 'title': 'hypermea-gateway root'},
         'logging': {'href': f'{base_url}/_logging', 'title': 'logging'}
     }
 
@@ -195,7 +195,7 @@ def _create_gateway_links(j):
             curie_instance = dict()
             curie_instance["name"] = record["name"]
             curie_instance["href"] = (
-                SETTINGS_GATEWAY.get("GW_CURIES_NAMESPACE_URI", "")
+                SETTINGS.get("GW_CURIES_NAMESPACE_URI", "")
                 + f'/{record["name"]}/relations/{"{rel}"}'
             )
             curie_instance["templated"] = True

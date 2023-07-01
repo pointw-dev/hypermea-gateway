@@ -54,8 +54,11 @@ def register(app):
     else:
         LOG.warning('No rels to register - cancelling')
 
-
+# TODO: are we really going to support nested gateways?
 def get_href_from_gateway(rel):
+    # ASSERT: HY_GATEWAY_URL is set
+    # ASSERT: the gateway it points to is up and running
+    # ASSERT: the rel is afforded on the gateway
     global REGISTRATIONS
     url = f"{SETTINGS['HY_GATEWAY_URL']}/"
     etag = REGISTRATIONS.get('_etag')
