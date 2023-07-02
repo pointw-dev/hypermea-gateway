@@ -23,10 +23,11 @@ SETTINGS.create('HY', {
     'ADD_ECHO': 'Disabled',
     'LOG_TO_FOLDER': 'Disabled',
     'SEND_ERROR_EMAILS': 'Disabled',
+    'USE_ABSOLUTE_URLS': 'Yes'
 })
 
 # optional settings...
-SETTINGS.create('HY', 'USE_ABSOLUTE_URLS', is_optional=True)
+# SETTINGS.create('HY', 'USE_ABSOLUTE_URLS', is_optional=True)   # moved up to provide default=Yes for the gateway
 SETTINGS.create('HY', 'BASE_PATH', is_optional=True)
 SETTINGS.create('HY', 'BASE_URL', is_optional=True)
 SETTINGS.create('HY', 'GATEWAY_URL', is_optional=True)

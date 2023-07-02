@@ -19,6 +19,12 @@ SCHEMA = {
                     "type": "string"
                 },  # TODO: conforms to URI constraints [RFC3986]
                 "title": {"type": "string"},
+                "templated": {
+                    'type': 'boolean',
+                    "nullable": True,
+                    'empty': True,
+                    'required': False
+                }
             },
         },
     },
