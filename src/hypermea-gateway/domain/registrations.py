@@ -21,8 +21,6 @@ SCHEMA = {
                 "title": {"type": "string"},
                 "templated": {
                     'type': 'boolean',
-                    "nullable": True,
-                    'empty': True,
                     'required': False
                 }
             },
