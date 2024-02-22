@@ -1,11 +1,12 @@
 import logging
 import json
 import re
-from utils import echo_message, get_db, get_my_base_url
+from hypermea.core.hooks import fix_links, tidy_post_links
+from hypermea.core.utils import echo_message, get_db, get_my_base_url, is_mongo_running, make_error_response
+from hypermea.core.logging import trace
 import hooks._error_handlers
 import hooks._settings
 import hooks._logs
-from log_trace.decorators import trace
 from configuration import SETTINGS
 import hooks.registrations
 import hashlib
@@ -21,9 +22,15 @@ class EtagException(Exception):
 
 @trace
 def add_hooks(app):
-    app.on_post_GET += _fix_links
-    app.on_post_PATCH += _fix_links
-    app.on_post_POST += _tidy_post_links
+    app.on_post_GET += _fix_links    # not using hypermea.core.fix_links - see note below
+    app.on_post_PATCH += _fix_links  # not using hypermea.core.fix_links - see note below
+    app.on_post_POST += tidy_post_links
+
+    @app.before_request
+    def before_request():
+        if not is_mongo_running():
+            LOG.error('MongoDB is not accessible with current settings.')
+            return make_error_response('MongoDB is not running or is not properly configured', 503)
 
     if SETTINGS.has_enabled('HY_ADD_ECHO'):
         @app.route('/_echo', methods=['PUT'])
@@ -35,21 +42,9 @@ def add_hooks(app):
     hooks._logs.add_hooks(app)
     hooks.registrations.add_hooks(app)
 
-
-@trace
-def _tidy_post_links(resource, request, payload):
-    if payload.status_code == 201:
-        document = json.loads(payload.data)
-        if '_items' in document:
-            for item in document['_items']:
-                _remove_unnecessary_links(links=item.get('_links', {}))
-        else:
-            _remove_unnecessary_links(links=document.get('_links', {}))
-
-        if 'pretty' in request.args:
-            payload.data = json.dumps(document, indent=4)
-        else:
-            payload.data = json.dumps(document)
+# NOTE: the following does not use hypermea.core version because of the unique handling
+#       of the API gateway. Please keep in sync with changes to hypermea.core
+# TODO: use strategy pattern or other way to inject uniqueness into the shared core methods
 
 
 @trace

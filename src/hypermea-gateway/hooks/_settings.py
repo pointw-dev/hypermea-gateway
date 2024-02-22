@@ -5,11 +5,11 @@ This module defines functions used by the other hooks modules, and some hooks of
 import logging
 import platform
 from flask import current_app, abort
-from utils import make_error_response
+from hypermea.core.utils import make_error_response
 from configuration import SETTINGS, VERSION
 from eve import __version__ as eve_version
 from cerberus import __version__ as cerberus_version
-from log_trace.decorators import trace
+from hypermea.core.logging import trace
 
 
 LOG = logging.getLogger('hooks.utils')
@@ -44,5 +44,8 @@ def _fetch_settings(response):
             'settings': {}
         }
         for setting in SETTINGS.settings[prefix]:
-            section['settings'][f'{prefix}_{setting}'] = SETTINGS.settings[prefix][setting]
+            value = SETTINGS.settings[prefix][setting]
+            if ('PASSWORD' in setting) or ('SECRET' in setting) or ('PRIVATE' in setting):
+                value = '***'
+            section['settings'][f'{prefix}_{setting}'] = value
         response['settings'].append(section)

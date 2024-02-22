@@ -1,6 +1,5 @@
 import logging
-import utils.log_setup      # do not remove this import
-from utils.gateway import register
+import hypermea.core.logging.setup      # do not remove this import
 from configuration import SETTINGS, DEFAULT_CURIES_NAMESPACE_URI
 from eve import Eve
 from flask_cors import CORS
@@ -39,9 +38,8 @@ class HypermeaService:
         LOG.info(border)        
         SETTINGS.dump(callback=LOG.info)
         if SETTINGS['GW_CURIES_NAMESPACE_URI'] == DEFAULT_CURIES_NAMESPACE_URI:
-            LOG.warn('The GW_CURIES_NAMESPACE_URI is using the default. Change this before using in production.')
+            LOG.warning('The GW_CURIES_NAMESPACE_URI is using the default. Change this before using in production.')
         try:
-            register(self._app)
             self._app.run(host=self.host, port=SETTINGS.get('HY_API_PORT'), threaded=self.threaded, debug=self.debug)
         except Exception as ex:  # pylint: disable=broad-except
             LOG.exception(ex)

@@ -3,7 +3,7 @@ hooks.registrations
 This module defines functions to add link relations to registrations.
 """
 import json
-from log_trace.decorators import trace
+from hypermea.core.logging import trace
 
 
 @trace
