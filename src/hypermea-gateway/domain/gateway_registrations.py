@@ -1,5 +1,5 @@
 """
-Defines the registrations resource.
+Defines the gateway_registrations resource.
 """
 from domain._common import COMMON_FIELDS
 

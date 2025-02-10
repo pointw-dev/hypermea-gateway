@@ -8,7 +8,7 @@ import hooks._error_handlers
 import hooks._settings
 import hooks._logs
 from configuration import SETTINGS
-import hooks.registrations
+import hooks.gateway_registrations
 import hashlib
 
 
@@ -40,7 +40,7 @@ def add_hooks(app):
     hooks._error_handlers.add_hooks(app)
     hooks._settings.add_hooks(app)
     hooks._logs.add_hooks(app)
-    hooks.registrations.add_hooks(app)
+    hooks.gateway_registrations.add_hooks(app)
 
 # NOTE: the following does not use hypermea.core version because of the unique handling
 #       of the API gateway. Please keep in sync with changes to hypermea.core
@@ -173,12 +173,12 @@ def _add_parent_link(links, resource):
 @trace
 def _create_gateway_links(j):
     db = get_db()
-    registration_col = db["registrations"]
+    gateway_registration_col = db["gateway_registrations"]
     curies = []
     all_links = dict()
-    for record in registration_col.find():
+    for record in gateway_registration_col.find():
         for key, value in record["rels"].items():
-            if registration_col.count_documents({
+            if gateway_registration_col.count_documents({
                 "$and": [
                     {f"rels.{key}": {'$exists': 1}},
                     {'name': {"$ne": record["name"]}}
