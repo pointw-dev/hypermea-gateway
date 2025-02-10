@@ -1,6 +1,6 @@
 import logging
-from hypermea.core import HypermeaEve
 import hypermea.core.logging.setup      # do not remove this import
+from hypermea.core import HypermeaEve
 from configuration import SETTINGS, DEFAULT_CURIES_NAMESPACE_URI
 from flask_cors import CORS
 import hooks
