@@ -2,6 +2,7 @@
 *.pyc
 
 pyvenv.cfg
+.python-version
 
 # Setuptools distribution folder.
 dist/

@@ -1,7 +1,7 @@
 import logging
+from hypermea.core import HypermeaEve
 import hypermea.core.logging.setup      # do not remove this import
 from configuration import SETTINGS, DEFAULT_CURIES_NAMESPACE_URI
-from eve import Eve
 from flask_cors import CORS
 import hooks
 
@@ -13,7 +13,7 @@ class HypermeaService:
     def __init__(self, **kwargs):
         self._grap_kwargs(kwargs)
         self._name = SETTINGS.get('HY_API_NAME', default_value='hypermea-gateway')
-        self._app = Eve(import_name=self._name)
+        self._app = HypermeaEve(import_name=self._name)
         CORS(self._app)
         hooks.add_hooks(self._app)
 
