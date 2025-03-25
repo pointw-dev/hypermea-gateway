@@ -18,7 +18,9 @@ SCHEMA = {
                 "href": {
                     "type": "string"
                 },  # TODO: conforms to URI constraints [RFC3986]
+                "_note": {"type": "string"},
                 "title": {"type": "string"},
+                "_prompt": {"type": "string"},
                 "templated": {
                     'type': 'boolean',
                     'required': False
