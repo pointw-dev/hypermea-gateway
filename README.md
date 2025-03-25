@@ -1,5 +1,5 @@
 # hypermea-gateway
-![](/img/hypermea-gateway-logo.svg)
+![](/img/hypermea-gateway-logo.svg){ width=300px }
 
 `hypermea-gateway` is a simple API that allows other HypermeaService APIs to register.  Once registered, that API's resources and affordances appear in the root of the gateway.  In this way, clients can go to the gateway and find all resources provided by all registered APIs.
 
